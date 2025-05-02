@@ -157,7 +157,7 @@ export const summaryMetrics: SummaryMetric[] = [
   },
   {
     title: "Appreciation Posts",
-    value: 1,247,
+    value: 1247,
     change: 8,
     trend: "up",
     description: "Recognition posts",
@@ -175,7 +175,7 @@ export const summaryMetrics: SummaryMetric[] = [
   },
   {
     title: "Points Awarded",
-    value: 27,890,
+    value: 27890,
     change: -3,
     trend: "down",
     description: "Points this month",
