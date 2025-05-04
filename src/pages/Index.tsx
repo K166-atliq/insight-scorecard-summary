@@ -5,12 +5,12 @@ import SummaryCards from '@/components/dashboard/SummaryCards';
 import CategoryGraph from '@/components/dashboard/CategoryGraph';
 import MemberLeaderboard from '@/components/dashboard/MemberLeaderboard';
 import MembersList from '@/components/dashboard/MembersList';
-import { categoryData } from '@/data/mockData';
 import { 
   useTeamMembersCount, 
   useAppreciationsCount, 
   useTeamLeaderboard, 
-  useDetailedMemberData 
+  useDetailedMemberData,
+  useTeamMetrics
 } from '@/hooks/use-supabase-data';
 
 const Index = () => {
@@ -19,6 +19,7 @@ const Index = () => {
   const { data: appreciationsCount, isLoading: isLoadingAppreciations } = useAppreciationsCount();
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useTeamLeaderboard();
   const { data: membersData, isLoading: isLoadingMembersData } = useDetailedMemberData();
+  const { data: teamMetrics, isLoading: isLoadingTeamMetrics } = useTeamMetrics();
 
   // Prepare summary metrics
   const summaryMetrics = [
@@ -58,7 +59,10 @@ const Index = () => {
         {/* Charts and Leaderboard Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Category Graph */}
-          <CategoryGraph data={categoryData} />
+          <CategoryGraph 
+            data={teamMetrics || []} 
+            isLoading={isLoadingTeamMetrics}
+          />
           
           {/* Leaderboard */}
           {isLoadingLeaderboard ? (

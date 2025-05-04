@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -170,6 +169,52 @@ export function useKudos() {
       }
       
       return data || [];
+    }
+  });
+}
+
+export function useTeamMetrics() {
+  return useQuery({
+    queryKey: ['team-metrics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('evaluations')
+        .select(`
+          leadership,
+          communication,
+          management,
+          problem_solving
+        `);
+      
+      if (error) {
+        console.error("Error fetching team metrics:", error);
+        throw new Error(error.message);
+      }
+      
+      // Calculate averages for each metric
+      let totalLeadership = 0;
+      let totalCommunication = 0;
+      let totalManagement = 0;
+      let totalProblemSolving = 0;
+      let count = 0;
+      
+      data.forEach(evaluation => {
+        if (evaluation.leadership) totalLeadership += evaluation.leadership;
+        if (evaluation.communication) totalCommunication += evaluation.communication;
+        if (evaluation.management) totalManagement += evaluation.management;
+        if (evaluation.problem_solving) totalProblemSolving += evaluation.problem_solving;
+        count++;
+      });
+      
+      // Convert metrics to percentages (assuming metrics are on a scale of 0-10)
+      const getPercentage = (value: number) => Math.round((value / count) * 10);
+      
+      return [
+        { name: "Leadership", score: getPercentage(totalLeadership) },
+        { name: "Communication", score: getPercentage(totalCommunication) },
+        { name: "Management", score: getPercentage(totalManagement) },
+        { name: "Problem Solving", score: getPercentage(totalProblemSolving) }
+      ];
     }
   });
 }
