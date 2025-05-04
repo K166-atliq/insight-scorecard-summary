@@ -74,6 +74,83 @@ export function useUsers() {
   });
 }
 
+export function useDetailedMemberData() {
+  return useQuery({
+    queryKey: ['detailed-members'],
+    queryFn: async () => {
+      // First, get all team members
+      const { data: members, error: membersError } = await supabase
+        .from('team_members')
+        .select('*');
+      
+      if (membersError) {
+        console.error("Error fetching team members:", membersError);
+        throw new Error(membersError.message);
+      }
+
+      // For each member, get their evaluation metrics
+      const membersWithDetails = await Promise.all(
+        members.map(async (member) => {
+          // Get aggregated evaluation data for this user
+          const { data: evalData, error: evalError } = await supabase
+            .from('evaluations')
+            .select(`
+              user_id,
+              leadership,
+              communication,
+              management,
+              problem_solving,
+              final_score
+            `)
+            .eq('user_id', member.user_id);
+
+          if (evalError) {
+            console.error(`Error fetching evaluations for user ${member.user_id}:`, evalError);
+            return {
+              ...member,
+              appreciationPoints: 0,
+              leadership: 0,
+              communication: 0,
+              management: 0,
+              problemSolving: 0,
+              lastActive: new Date().toISOString()
+            };
+          }
+
+          // Calculate averages and totals
+          let appreciationPoints = 0;
+          let totalLeadership = 0;
+          let totalCommunication = 0; 
+          let totalManagement = 0;
+          let totalProblemSolving = 0;
+          let evalCount = 0;
+
+          evalData.forEach(eval => {
+            appreciationPoints += eval.final_score || 0;
+            totalLeadership += eval.leadership || 0;
+            totalCommunication += eval.communication || 0;
+            totalManagement += eval.management || 0;
+            totalProblemSolving += eval.problem_solving || 0;
+            evalCount++;
+          });
+
+          return {
+            ...member,
+            appreciationPoints,
+            leadership: evalCount ? Math.round(totalLeadership / evalCount) : 0,
+            communication: evalCount ? Math.round(totalCommunication / evalCount) : 0,
+            management: evalCount ? Math.round(totalManagement / evalCount) : 0,
+            problemSolving: evalCount ? Math.round(totalProblemSolving / evalCount) : 0,
+            lastActive: new Date().toISOString() // Placeholder for now
+          };
+        })
+      );
+
+      return membersWithDetails || [];
+    }
+  });
+}
+
 export function useKudos() {
   return useQuery({
     queryKey: ['kudos'],

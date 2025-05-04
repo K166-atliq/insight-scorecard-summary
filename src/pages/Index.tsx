@@ -6,14 +6,19 @@ import CategoryGraph from '@/components/dashboard/CategoryGraph';
 import MemberLeaderboard from '@/components/dashboard/MemberLeaderboard';
 import MembersList from '@/components/dashboard/MembersList';
 import { categoryData } from '@/data/mockData';
-import { useTeamMembersCount, useAppreciationsCount, useTeamLeaderboard, useUsers } from '@/hooks/use-supabase-data';
+import { 
+  useTeamMembersCount, 
+  useAppreciationsCount, 
+  useTeamLeaderboard, 
+  useDetailedMemberData 
+} from '@/hooks/use-supabase-data';
 
 const Index = () => {
   // Fetch data from Supabase
   const { data: teamMembersCount, isLoading: isLoadingMembers } = useTeamMembersCount();
   const { data: appreciationsCount, isLoading: isLoadingAppreciations } = useAppreciationsCount();
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useTeamLeaderboard();
-  const { data: membersData, isLoading: isLoadingMembersData } = useUsers();
+  const { data: membersData, isLoading: isLoadingMembersData } = useDetailedMemberData();
 
   // Prepare summary metrics
   const summaryMetrics = [
@@ -25,7 +30,7 @@ const Index = () => {
       icon: "Users",
       trend: null,
       description: "Total number of team members",
-      color: "blue"
+      color: "blue" as const
     },
     {
       title: "Appreciation Posts",
@@ -35,7 +40,7 @@ const Index = () => {
       icon: "Heart",
       trend: null,
       description: "Total appreciation posts in the system",
-      color: "purple"
+      color: "purple" as const
     }
   ];
 
@@ -62,8 +67,8 @@ const Index = () => {
             </div>
           ) : (
             <MemberLeaderboard 
-              members={leaderboardData.map((item: any) => ({
-                id: item.user_id.toString(),
+              members={leaderboardData?.map((item) => ({
+                id: item.user_id?.toString(),
                 name: item.display_name || 'Unknown',
                 title: "Team Member",
                 points: Math.round(item.total_score || 0),
@@ -71,7 +76,7 @@ const Index = () => {
                 appreciationPosts: 0,
                 summary: "Team member evaluation score",
                 lastActive: new Date().toISOString()
-              }))} 
+              })) || []} 
             />
           )}
         </div>
@@ -82,16 +87,7 @@ const Index = () => {
             <p className="text-gray-500">Loading members data...</p>
           </div>
         ) : (
-          <MembersList members={membersData.map((member: any) => ({
-            id: member.user_id.toString(),
-            name: member.display_name || 'Unknown',
-            title: "Team Member",
-            points: 0,
-            avatar: "",
-            appreciationPosts: 0,
-            summary: member.email || "Team member",
-            lastActive: new Date().toISOString()
-          }))} />
+          <MembersList members={membersData || []} />
         )}
       </div>
     </div>
