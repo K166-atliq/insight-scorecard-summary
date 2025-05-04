@@ -125,12 +125,12 @@ export function useDetailedMemberData() {
           let totalProblemSolving = 0;
           let evalCount = 0;
 
-          evalData.forEach(eval => {
-            appreciationPoints += eval.final_score || 0;
-            totalLeadership += eval.leadership || 0;
-            totalCommunication += eval.communication || 0;
-            totalManagement += eval.management || 0;
-            totalProblemSolving += eval.problem_solving || 0;
+          evalData.forEach(evaluation => {
+            appreciationPoints += evaluation.final_score || 0;
+            totalLeadership += evaluation.leadership || 0;
+            totalCommunication += evaluation.communication || 0;
+            totalManagement += evaluation.management || 0;
+            totalProblemSolving += evaluation.problem_solving || 0;
             evalCount++;
           });
 

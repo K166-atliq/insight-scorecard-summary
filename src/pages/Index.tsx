@@ -68,7 +68,7 @@ const Index = () => {
           ) : (
             <MemberLeaderboard 
               members={leaderboardData?.map((item) => ({
-                id: item.user_id?.toString(),
+                id: Number(item.user_id.toString()),
                 name: item.display_name || 'Unknown',
                 title: "Team Member",
                 points: Math.round(item.total_score || 0),
