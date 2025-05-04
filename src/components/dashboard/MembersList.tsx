@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowUpDown, ChevronDown, Award, Star } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Award } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -73,10 +73,15 @@ const MembersList: React.FC<MembersListProps> = ({ members }) => {
     );
   };
 
-  const filteredMembers = members.filter(member => 
-    (member.display_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (member.email || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Safe filtering to handle potential undefined or null values
+  const filteredMembers = members.filter(member => {
+    const displayName = member.display_name || "";
+    const email = member.email || "";
+    const searchTermLower = searchTerm.toLowerCase();
+    
+    return displayName.toLowerCase().includes(searchTermLower) || 
+           email.toLowerCase().includes(searchTermLower);
+  });
 
   const sortedMembers = [...filteredMembers].sort((a, b) => {
     if (sortField === "name") {
