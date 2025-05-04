@@ -22,27 +22,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
-interface MemberData {
-  user_id: string;
-  display_name?: string | null;
-  email?: string | null;
-  is_active?: boolean | null;
-  appreciationPoints: number;
-  leadership: number;
-  communication: number;
-  management: number;
-  problemSolving: number;
-  lastActive: string;
-}
-
-interface MembersListProps {
-  members: MemberData[];
-}
-
 type SortField = "name" | "appreciationPoints" | "leadership" | "communication" | "management" | "problemSolving" | "lastActive";
 type SortDirection = "asc" | "desc";
 
-const MembersList: React.FC<MembersListProps> = ({ members }) => {
+const MembersList = ({ members }) => {
   const [sortField, setSortField] = useState<SortField>("appreciationPoints");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,7 +51,7 @@ const MembersList: React.FC<MembersListProps> = ({ members }) => {
     return (
       <div className="flex items-center gap-2">
         <Progress value={level * 10} className="h-2 w-16" />
-        <span>{level}/10</span>
+        <span>{level}/100</span>
       </div>
     );
   };

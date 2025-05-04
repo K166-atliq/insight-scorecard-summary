@@ -26,9 +26,7 @@ const Index = () => {
     {
       title: "Team Members",
       value: isLoadingMembers ? "Loading..." : teamMembersCount,
-      change: null,
-      changeType: "neutral",
-      icon: "Users",
+      icon: "users",
       trend: null,
       description: "Total number of team members",
       color: "blue" as const
@@ -36,9 +34,7 @@ const Index = () => {
     {
       title: "Appreciation Posts",
       value: isLoadingAppreciations ? "Loading..." : appreciationsCount,
-      change: null, 
-      changeType: "neutral",
-      icon: "Heart",
+      icon: "award",
       trend: null,
       description: "Total appreciation posts in the system",
       color: "purple" as const

@@ -3,16 +3,6 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-interface CategoryMetric {
-  name: string;
-  score: number;
-}
-
-interface CategoryGraphProps {
-  data: CategoryMetric[];
-  isLoading: boolean;
-}
-
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -25,7 +15,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const CategoryGraph: React.FC<CategoryGraphProps> = ({ data, isLoading }) => {
+const CategoryGraph = ({ data, isLoading }) => {
   if (isLoading) {
     return (
       <Card className="col-span-1 md:col-span-2 shadow-md">

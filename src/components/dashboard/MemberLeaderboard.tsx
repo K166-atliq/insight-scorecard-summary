@@ -2,15 +2,9 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Member } from '@/data/mockData';
 import { Medal, Trophy } from "lucide-react";
 
-interface MemberLeaderboardProps {
-  members: Member[];
-  limit?: number;
-}
-
-const MemberLeaderboard: React.FC<MemberLeaderboardProps> = ({ members, limit = 5 }) => {
+const MemberLeaderboard = ({ members, limit = 5 }) => {
   const topMembers = members.slice(0, limit);
   
   const getMedalColor = (index: number) => {
