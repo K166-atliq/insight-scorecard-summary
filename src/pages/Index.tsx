@@ -23,6 +23,9 @@ const Index = () => {
       change: null,
       changeType: "neutral",
       icon: "Users",
+      trend: null,
+      description: "Total number of team members",
+      color: "blue"
     },
     {
       title: "Appreciation Posts",
@@ -30,6 +33,9 @@ const Index = () => {
       change: null, 
       changeType: "neutral",
       icon: "Heart",
+      trend: null,
+      description: "Total appreciation posts in the system",
+      color: "purple"
     }
   ];
 
@@ -56,12 +62,12 @@ const Index = () => {
             </div>
           ) : (
             <MemberLeaderboard 
-              members={leaderboardData.map(item => ({
-                id: item.user_id,
+              members={leaderboardData.map((item: any) => ({
+                id: item.user_id.toString(),
                 name: item.display_name || 'Unknown',
                 title: "Team Member",
                 points: Math.round(item.total_score || 0),
-                avatar: item.avatar || "",
+                avatar: "",
                 appreciationPosts: 0,
                 summary: "Team member evaluation score",
                 lastActive: new Date().toISOString()
@@ -76,11 +82,11 @@ const Index = () => {
             <p className="text-gray-500">Loading members data...</p>
           </div>
         ) : (
-          <MembersList members={membersData.map((member) => ({
-            id: member.user_id,
+          <MembersList members={membersData.map((member: any) => ({
+            id: member.user_id.toString(),
             name: member.display_name || 'Unknown',
             title: "Team Member",
-            points: 0, // We'll keep this for UI compatibility
+            points: 0,
             avatar: "",
             appreciationPosts: 0,
             summary: member.email || "Team member",

@@ -42,74 +42,16 @@ export function useTeamLeaderboard() {
   return useQuery({
     queryKey: ['team-leaderboard'],
     queryFn: async () => {
+      // Use the RPC function we just created
       const { data, error } = await supabase
-        .rpc('get_leaderboard')
-        .limit(5);
+        .rpc('get_leaderboard');
       
       if (error) {
-        // If the RPC function doesn't exist, try the raw query
-        const { data: rawData, error: rawError } = await supabase
-          .from('evaluations')
-          .select(`
-            user_id,
-            team_members!inner(user_id, display_name, is_active)
-          `)
-          .eq('team_members.is_active', true)
-          .then(result => {
-            if (result.error) throw result.error;
-            
-            // Process and aggregate data
-            const aggregatedData = Object.values(result.data.reduce((acc, curr) => {
-              const userId = curr.user_id;
-              const displayName = curr.team_members?.display_name || 'Unknown';
-              const finalScore = curr.final_score || 0;
-              
-              if (!acc[userId]) {
-                acc[userId] = {
-                  user_id: userId,
-                  display_name: displayName,
-                  total_score: 0
-                };
-              }
-              
-              acc[userId].total_score += finalScore;
-              return acc;
-            }, {}))
-            .sort((a, b) => b.total_score - a.total_score)
-            .slice(0, 5)
-            .map(item => ({
-              ...item,
-              avatar: null // Add a placeholder for the avatar
-            }));
-            
-            return { data: aggregatedData, error: null };
-          });
-        
-        if (rawError) {
-          console.error("Error fetching leaderboard data:", rawError);
-          throw new Error(rawError.message);
-        }
-        
-        return rawData || [];
-      }
-      
-      return data || [];
-    }
-  });
-}
-
-export function useKudosTypes() {
-  return useQuery({
-    queryKey: ['kudos-types'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('kudos_types').select('*');
-      
-      if (error) {
-        console.error("Error fetching kudos types:", error);
+        console.error("Error fetching leaderboard data:", error);
         throw new Error(error.message);
       }
       
-      return data;
+      return data || [];
     }
   });
 }
@@ -118,14 +60,16 @@ export function useUsers() {
   return useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('team_members').select('*');
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*');
       
       if (error) {
         console.error("Error fetching users:", error);
         throw new Error(error.message);
       }
       
-      return data;
+      return data || [];
     }
   });
 }
@@ -148,7 +92,7 @@ export function useKudos() {
         throw new Error(error.message);
       }
       
-      return data;
+      return data || [];
     }
   });
 }
