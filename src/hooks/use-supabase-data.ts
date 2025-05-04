@@ -221,30 +221,6 @@ export function useTeamMetrics() {
       const getAverage = (value: number) =>
         value !== 0 ? Math.round(value / evalData.length) : 0;
 
-      console.log([
-        {
-          name: "Leadership",
-          score: getAverage(totalLeadership),
-          color: "#3b82f6",
-        },
-        {
-          name: "Communication",
-          score: getAverage(totalCommunication),
-          color: "#8b5cf6",
-        },
-        {
-          name: "Management",
-          score: getAverage(totalManagement),
-          color: "#10b981",
-        },
-        {
-          name: "Problem Solving",
-          score: getAverage(totalProblemSolving),
-          color: "#f97316",
-        },
-      ]);
-      
-
       return [
         {
           name: "Leadership",

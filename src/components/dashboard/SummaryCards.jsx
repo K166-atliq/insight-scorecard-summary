@@ -35,7 +35,7 @@ const SummaryCards = ({ metrics }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-fade-in">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mb-8 animate-fade-in">
       {metrics.map((metric, index) => (
         <Card key={index} className="overflow-hidden border-0 shadow-md">
           <CardContent className="p-0">
