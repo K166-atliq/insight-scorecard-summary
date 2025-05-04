@@ -9,136 +9,152 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      kudos: {
+      appreciations: {
         Row: {
-          corrected_message: string | null
-          created_at: string | null
-          id: number
-          message_id: string | null
-          original_message: string
-          receiver_id: number | null
-          sender_id: number | null
-          type_id: number | null
-          upvotes: number | null
+          created_time: string | null
+          message: string | null
+          message_id: string
+          posted_by_user_id: string | null
+          quarter: string | null
+          year: number | null
         }
         Insert: {
-          corrected_message?: string | null
-          created_at?: string | null
-          id?: number
-          message_id?: string | null
-          original_message: string
-          receiver_id?: number | null
-          sender_id?: number | null
-          type_id?: number | null
-          upvotes?: number | null
+          created_time?: string | null
+          message?: string | null
+          message_id: string
+          posted_by_user_id?: string | null
+          quarter?: string | null
+          year?: number | null
         }
         Update: {
-          corrected_message?: string | null
-          created_at?: string | null
-          id?: number
-          message_id?: string | null
-          original_message?: string
-          receiver_id?: number | null
-          sender_id?: number | null
-          type_id?: number | null
-          upvotes?: number | null
+          created_time?: string | null
+          message?: string | null
+          message_id?: string
+          posted_by_user_id?: string | null
+          quarter?: string | null
+          year?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "kudos_receiver_id_fkey"
-            columns: ["receiver_id"]
+            foreignKeyName: "appreciations_posted_by_user_id_fkey"
+            columns: ["posted_by_user_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "kudos_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "kudos_type_id_fkey"
-            columns: ["type_id"]
-            isOneToOne: false
-            referencedRelation: "kudos_types"
-            referencedColumns: ["id"]
+            referencedRelation: "team_members"
+            referencedColumns: ["user_id"]
           },
         ]
       }
-      kudos_types: {
+      appreciations_details: {
         Row: {
-          id: number
-          name: string
+          mentioned_user_id: string
+          message_id: string
         }
         Insert: {
-          id?: number
-          name: string
+          mentioned_user_id: string
+          message_id: string
         }
         Update: {
-          id?: number
-          name?: string
-        }
-        Relationships: []
-      }
-      upvotes: {
-        Row: {
-          created_at: string | null
-          id: number
-          kudo_id: number | null
-          user_id: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: number
-          kudo_id?: number | null
-          user_id?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: number
-          kudo_id?: number | null
-          user_id?: number | null
+          mentioned_user_id?: string
+          message_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "upvotes_kudo_id_fkey"
-            columns: ["kudo_id"]
+            foreignKeyName: "appreciations_details_mentioned_user_id_fkey"
+            columns: ["mentioned_user_id"]
             isOneToOne: false
-            referencedRelation: "kudos"
-            referencedColumns: ["id"]
+            referencedRelation: "team_members"
+            referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "upvotes_user_id_fkey"
+            foreignKeyName: "appreciations_details_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "appreciations"
+            referencedColumns: ["message_id"]
+          },
+        ]
+      }
+      evaluations: {
+        Row: {
+          collaboration: number | null
+          communication: number | null
+          consistency: number | null
+          final_score: number | null
+          impact: number | null
+          initiative: number | null
+          leadership: number | null
+          management: number | null
+          message_id: string
+          problem_solving: number | null
+          reasoning: string | null
+          upvote: number | null
+          user_id: string
+        }
+        Insert: {
+          collaboration?: number | null
+          communication?: number | null
+          consistency?: number | null
+          final_score?: number | null
+          impact?: number | null
+          initiative?: number | null
+          leadership?: number | null
+          management?: number | null
+          message_id: string
+          problem_solving?: number | null
+          reasoning?: string | null
+          upvote?: number | null
+          user_id: string
+        }
+        Update: {
+          collaboration?: number | null
+          communication?: number | null
+          consistency?: number | null
+          final_score?: number | null
+          impact?: number | null
+          initiative?: number | null
+          leadership?: number | null
+          management?: number | null
+          message_id?: string
+          problem_solving?: number | null
+          reasoning?: string | null
+          upvote?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "appreciations"
+            referencedColumns: ["message_id"]
+          },
+          {
+            foreignKeyName: "evaluations_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: "team_members"
+            referencedColumns: ["user_id"]
           },
         ]
       }
-      users: {
+      team_members: {
         Row: {
-          avatar: string | null
-          email: string
-          id: number
-          name: string
-          points: number | null
+          display_name: string | null
+          email: string | null
+          is_active: boolean | null
+          user_id: string
         }
         Insert: {
-          avatar?: string | null
-          email: string
-          id?: number
-          name: string
-          points?: number | null
+          display_name?: string | null
+          email?: string | null
+          is_active?: boolean | null
+          user_id: string
         }
         Update: {
-          avatar?: string | null
-          email?: string
-          id?: number
-          name?: string
-          points?: number | null
+          display_name?: string | null
+          email?: string | null
+          is_active?: boolean | null
+          user_id?: string
         }
         Relationships: []
       }
