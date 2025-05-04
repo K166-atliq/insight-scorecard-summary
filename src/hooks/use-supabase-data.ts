@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -177,44 +178,82 @@ export function useTeamMetrics() {
   return useQuery({
     queryKey: ['team-metrics'],
     queryFn: async () => {
+      // Use the SQL query directly as suggested
       const { data, error } = await supabase
-        .from('evaluations')
-        .select(`
-          leadership,
-          communication,
-          management,
-          problem_solving
-        `);
+        .rpc('execute_sql', {
+          query_text: `
+            SELECT
+              'Leadership' AS name,
+              ROUND(AVG(leadership) * 10, 0) AS score
+            FROM evaluations
+            WHERE leadership IS NOT NULL
+            UNION ALL
+            SELECT
+              'Communication' AS name,
+              ROUND(AVG(communication) * 10, 0) AS score
+            FROM evaluations
+            WHERE communication IS NOT NULL
+            UNION ALL
+            SELECT
+              'Management' AS name,
+              ROUND(AVG(management) * 10, 0) AS score
+            FROM evaluations
+            WHERE management IS NOT NULL
+            UNION ALL
+            SELECT
+              'Problem Solving' AS name,
+              ROUND(AVG(problem_solving) * 10, 0) AS score
+            FROM evaluations
+            WHERE problem_solving IS NOT NULL
+          `
+        });
       
       if (error) {
         console.error("Error fetching team metrics:", error);
-        throw new Error(error.message);
+        
+        // Fallback to the previous implementation if rpc fails
+        const { data: evalData, error: evalError } = await supabase
+          .from('evaluations')
+          .select(`
+            leadership,
+            communication,
+            management,
+            problem_solving
+          `);
+        
+        if (evalError) {
+          console.error("Error in fallback query for team metrics:", evalError);
+          throw new Error(evalError.message);
+        }
+        
+        // Calculate averages for each metric
+        let totalLeadership = 0;
+        let totalCommunication = 0;
+        let totalManagement = 0;
+        let totalProblemSolving = 0;
+        let count = 0;
+        
+        evalData.forEach(evaluation => {
+          if (evaluation.leadership) totalLeadership += evaluation.leadership;
+          if (evaluation.communication) totalCommunication += evaluation.communication;
+          if (evaluation.management) totalManagement += evaluation.management;
+          if (evaluation.problem_solving) totalProblemSolving += evaluation.problem_solving;
+          count++;
+        });
+        
+        // Convert metrics to percentages (assuming metrics are on a scale of 0-10)
+        const getPercentage = (value: number) => Math.round((value / count) * 10);
+        
+        return [
+          { name: "Leadership", score: getPercentage(totalLeadership) },
+          { name: "Communication", score: getPercentage(totalCommunication) },
+          { name: "Management", score: getPercentage(totalManagement) },
+          { name: "Problem Solving", score: getPercentage(totalProblemSolving) }
+        ];
       }
       
-      // Calculate averages for each metric
-      let totalLeadership = 0;
-      let totalCommunication = 0;
-      let totalManagement = 0;
-      let totalProblemSolving = 0;
-      let count = 0;
-      
-      data.forEach(evaluation => {
-        if (evaluation.leadership) totalLeadership += evaluation.leadership;
-        if (evaluation.communication) totalCommunication += evaluation.communication;
-        if (evaluation.management) totalManagement += evaluation.management;
-        if (evaluation.problem_solving) totalProblemSolving += evaluation.problem_solving;
-        count++;
-      });
-      
-      // Convert metrics to percentages (assuming metrics are on a scale of 0-10)
-      const getPercentage = (value: number) => Math.round((value / count) * 10);
-      
-      return [
-        { name: "Leadership", score: getPercentage(totalLeadership) },
-        { name: "Communication", score: getPercentage(totalCommunication) },
-        { name: "Management", score: getPercentage(totalManagement) },
-        { name: "Problem Solving", score: getPercentage(totalProblemSolving) }
-      ];
+      // If successful, return the data from the SQL query
+      return data || [];
     }
   });
 }
