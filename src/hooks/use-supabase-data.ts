@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,7 +42,7 @@ export function useTeamLeaderboard(quarter: string | null = null, year: number |
     queryKey: ["team-leaderboard", quarter, year],
     queryFn: async () => {
       // Create params object for the RPC call
-      const params: Record<string, any> = {};
+      const params: { filter_quarter?: string; filter_year?: number } = {};
       
       if (quarter && quarter !== "All") {
         params.filter_quarter = quarter;
@@ -210,7 +209,7 @@ export function useTeamMetrics(quarter: string | null = null, year: number | nul
       try {
         // Build the function URL and parameters
         const functionName = "get_team_metrics";
-        let functionParams: Record<string, any> = {};
+        const functionParams: { filter_quarter?: string; filter_year?: number } = {};
         
         // Add query parameters if they exist
         if (quarter && quarter !== "All") {
@@ -238,17 +237,12 @@ export function useTeamMetrics(quarter: string | null = null, year: number | nul
         console.error("Error using function for team metrics:", error);
         
         // Fallback to direct database query when edge function fails
-        const { data: evalData, error: evalError } = await supabase
-          .from("evaluations")
-          .select(`
-            leadership,
-            communication,
-            management,
-            problem_solving
-          `);
-
-        // Apply filters if they exist
-        let filteredData = evalData;
+        let query = supabase.from("evaluations").select(`
+          leadership,
+          communication,
+          management,
+          problem_solving
+        `);
         
         if ((quarter && quarter !== "All") || (year && year > 0)) {
           // Get IDs for messages that match our filters
@@ -276,29 +270,16 @@ export function useTeamMetrics(quarter: string | null = null, year: number | nul
           
           // Filter evaluation data to only include these message IDs
           if (messageIds.length > 0) {
-            const { data: filteredEvals, error: filteredError } = await supabase
-              .from("evaluations")
-              .select(`
-                leadership,
-                communication,
-                management,
-                problem_solving
-              `)
-              .in("message_id", messageIds);
-              
-            if (filteredError) {
-              console.error("Error fetching filtered evaluations:", filteredError);
-              throw new Error(filteredError.message);
-            }
-            
-            filteredData = filteredEvals;
+            query = query.in("message_id", messageIds);
           } else {
             // No messages match the filters, return empty dataset
-            filteredData = [];
+            return [];
           }
         }
-
-        if (evalError && !filteredData) {
+        
+        const { data: evalData, error: evalError } = await query;
+        
+        if (evalError) {
           console.error("Error in fallback query for team metrics:", evalError);
           throw new Error(evalError.message);
         }
@@ -308,9 +289,9 @@ export function useTeamMetrics(quarter: string | null = null, year: number | nul
         let totalCommunication = 0;
         let totalManagement = 0;
         let totalProblemSolving = 0;
-        let count = filteredData ? filteredData.length : 0;
+        let count = evalData ? evalData.length : 0;
 
-        filteredData?.forEach((evaluation) => {
+        evalData?.forEach((evaluation) => {
           if (evaluation.leadership) totalLeadership += evaluation.leadership;
           if (evaluation.communication) totalCommunication += evaluation.communication;
           if (evaluation.management) totalManagement += evaluation.management;
