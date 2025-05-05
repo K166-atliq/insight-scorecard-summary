@@ -19,6 +19,11 @@ serve(async (req) => {
   }
 
   try {
+    // Parse the request to get query parameters
+    const url = new URL(req.url);
+    const quarter = url.searchParams.get("quarter") || null;
+    const year = url.searchParams.get("year") ? parseInt(url.searchParams.get("year") || "0") : null;
+
     // Create a Supabase client with the Auth context of the logged in user
     const supabaseClient = createClient(
       // Get these from the Supabase project settings
@@ -32,8 +37,11 @@ serve(async (req) => {
       }
     );
 
-    // Execute the SQL query
-    const { data, error } = await supabaseClient.rpc('get_team_metrics');
+    // Execute the SQL query with optional quarter and year filters
+    const { data, error } = await supabaseClient.rpc('get_team_metrics', {
+      filter_quarter: quarter !== "All" ? quarter : null,
+      filter_year: year > 0 ? year : null
+    });
 
     if (error) {
       throw error;

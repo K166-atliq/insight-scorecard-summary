@@ -1,25 +1,49 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import SummaryCards from '@/components/dashboard/SummaryCards';
 import CategoryGraph from '@/components/dashboard/CategoryGraph';
 import MemberLeaderboard from '@/components/dashboard/MemberLeaderboard';
 import MembersList from '@/components/dashboard/MembersList';
+import QuarterYearFilter from '@/components/dashboard/QuarterYearFilter';
 import { 
   useTeamMembersCount, 
   useAppreciationsCount, 
   useTeamLeaderboard, 
   useDetailedMemberData,
-  useTeamMetrics
+  useTeamMetrics,
+  useAvailableYears
 } from '@/hooks/use-supabase-data';
 
 const Index = () => {
-  // Fetch data from Supabase
+  // State for filters
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("All");
+  const [selectedYear, setSelectedYear] = useState<number>(0); // 0 means all years
+  
+  // Fetch available years for the filter
+  const { data: availableYears = [], isLoading: isLoadingYears } = useAvailableYears();
+
+  // Fetch data from Supabase with filters
   const { data: teamMembersCount, isLoading: isLoadingMembers } = useTeamMembersCount();
   const { data: appreciationsCount, isLoading: isLoadingAppreciations } = useAppreciationsCount();
-  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useTeamLeaderboard();
+  const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useTeamLeaderboard(
+    selectedQuarter !== "All" ? selectedQuarter : null,
+    selectedYear > 0 ? selectedYear : null
+  );
   const { data: membersData, isLoading: isLoadingMembersData } = useDetailedMemberData();
-  const { data: teamMetrics, isLoading: isLoadingTeamMetrics } = useTeamMetrics();
+  const { data: teamMetrics, isLoading: isLoadingTeamMetrics } = useTeamMetrics(
+    selectedQuarter !== "All" ? selectedQuarter : null, 
+    selectedYear > 0 ? selectedYear : null
+  );
+
+  // Handle filter changes
+  const handleQuarterChange = (quarter: string) => {
+    setSelectedQuarter(quarter);
+  };
+
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+  };
 
   // Prepare summary metrics
   const summaryMetrics = [
@@ -49,6 +73,15 @@ const Index = () => {
       />
       
       <div className="space-y-8">
+        {/* Filter Controls */}
+        <QuarterYearFilter 
+          selectedQuarter={selectedQuarter}
+          selectedYear={selectedYear}
+          onQuarterChange={handleQuarterChange}
+          onYearChange={handleYearChange}
+          availableYears={availableYears}
+        />
+        
         {/* Summary Cards */}
         <SummaryCards metrics={summaryMetrics} />
         

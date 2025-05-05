@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -38,12 +37,22 @@ export function useAppreciationsCount() {
   });
 }
 
-export function useTeamLeaderboard() {
+export function useTeamLeaderboard(quarter: string | null = null, year: number | null = null) {
   return useQuery({
-    queryKey: ["team-leaderboard"],
+    queryKey: ["team-leaderboard", quarter, year],
     queryFn: async () => {
-      // Use the RPC function we just created
-      const { data, error } = await supabase.rpc("get_leaderboard");
+      // Use the RPC function with filters
+      const params: Record<string, any> = {};
+      
+      if (quarter && quarter !== "All") {
+        params.filter_quarter = quarter;
+      }
+      
+      if (year && year > 0) {
+        params.filter_year = year;
+      }
+      
+      const { data, error } = await supabase.rpc("get_leaderboard", params);
 
       if (error) {
         console.error("Error fetching leaderboard data:", error);
@@ -192,34 +201,69 @@ export function useKudos() {
   });
 }
 
-export function useTeamMetrics() {
+export function useTeamMetrics(quarter: string | null = null, year: number | null = null) {
   return useQuery({
-    queryKey: ["team-metrics"],
+    queryKey: ["team-metrics", quarter, year],
     queryFn: async () => {
       try {
-        // First try to use the SQL function
-        const { data, error } = await supabase.rpc("get_team_metrics");
+        // First try to use the edge function with filters
+        const url = new URL(`${supabase.functions.url}/get_team_metrics`);
+        
+        // Add query parameters if they exist
+        if (quarter && quarter !== "All") {
+          url.searchParams.append("quarter", quarter);
+        }
+        
+        if (year && year > 0) {
+          url.searchParams.append("year", year.toString());
+        }
+        
+        const { data: metricsData, error } = await supabase.functions.invoke("get_team_metrics", {
+          query: url.searchParams
+        });
         
         if (error) throw error;
         
         // Transform the returned data into the expected format
-        return data.map((item: { category: string; percentage: number }) => ({
+        return metricsData.map((item: { category: string; percentage: number }) => ({
           name: item.category,
           score: item.percentage,
           color: getColorForCategory(item.category),
         }));
       } catch (error) {
-        console.error("Error using RPC for team metrics:", error);
+        console.error("Error using function for team metrics:", error);
         
-        // Fallback to the previous implementation
-        const { data: evalData, error: evalError } = await supabase.from(
-          "evaluations"
-        ).select(`
+        // Fallback to the previous implementation with filters
+        let query = supabase.from("evaluations").select(`
           leadership,
           communication,
           management,
           problem_solving
         `);
+        
+        // Apply filters if they exist
+        if (quarter && quarter !== "All") {
+          // Join with appreciations to get quarter/year data
+          query = query.innerJoin(
+            "appreciations", 
+            "evaluations.message_id", 
+            "appreciations.message_id"
+          ).eq("appreciations.quarter", quarter);
+        }
+        
+        if (year && year > 0) {
+          // Only add this filter if not already joined
+          if (!(quarter && quarter !== "All")) {
+            query = query.innerJoin(
+              "appreciations", 
+              "evaluations.message_id", 
+              "appreciations.message_id"
+            );
+          }
+          query = query.eq("appreciations.year", year);
+        }
+
+        const { data: evalData, error: evalError } = await query;
 
         if (evalError) {
           console.error("Error in fallback query for team metrics:", evalError);
@@ -267,6 +311,29 @@ export function useTeamMetrics() {
           },
         ];
       }
+    },
+  });
+}
+
+// Add a function to get available years from data
+export function useAvailableYears() {
+  return useQuery({
+    queryKey: ["available-years"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("appreciations")
+        .select("year")
+        .not("year", "is", null)
+        .order("year", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching available years:", error);
+        throw new Error(error.message);
+      }
+
+      // Extract unique years
+      const years = [...new Set(data.map(item => item.year))];
+      return years.filter(Boolean);
     },
   });
 }
