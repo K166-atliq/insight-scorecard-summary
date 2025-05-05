@@ -20,9 +20,10 @@ export function useTeamLeaderboard(quarter: string | null = null, year: number |
         params.filter_year = year;
       }
       
-      // Use the RPC function with params - we use Record<string, any> for compatibility
-      // with the Supabase client's typing expectation for the rpc method
-      const { data, error } = await supabase.rpc("get_leaderboard", params);
+      // Type assertion to work around the type constraint
+      // This is safe because the get_leaderboard function actually accepts these parameters
+      // even though TypeScript definitions don't reflect it
+      const { data, error } = await supabase.rpc("get_leaderboard", params as any);
 
       if (error) {
         console.error("Error fetching leaderboard data:", error);
