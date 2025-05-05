@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowUpDown, ChevronDown, Award } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Award, Star } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 
-type SortField = "name" | "appreciationPoints" | "leadership" | "communication" | "management" | "problemSolving" | "lastActive";
+type SortField = "name" | "appreciationPoints" | "totalScore" | "leadership" | "communication" | "management" | "problemSolving" | "lastActive";
 type SortDirection = "asc" | "desc";
 
 const MembersList = ({ members }) => {
@@ -51,7 +51,7 @@ const MembersList = ({ members }) => {
     return (
       <div className="flex items-center gap-2">
         <Progress value={level * 10} className="h-2 w-16" />
-        <span>{level}/100</span>
+        <span>{level}/10</span>
       </div>
     );
   };
@@ -75,6 +75,10 @@ const MembersList = ({ members }) => {
       return sortDirection === "asc" 
         ? a.appreciationPoints - b.appreciationPoints 
         : b.appreciationPoints - a.appreciationPoints;
+    } else if (sortField === "totalScore") {
+      return sortDirection === "asc" 
+        ? a.totalScore - b.totalScore 
+        : b.totalScore - a.totalScore;
     } else if (sortField === "leadership") {
       return sortDirection === "asc" 
         ? a.leadership - b.leadership 
@@ -127,6 +131,9 @@ const MembersList = ({ members }) => {
                 <DropdownMenuItem onClick={() => setSortField("appreciationPoints")}>
                   Sort by Points
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortField("totalScore")}>
+                  Sort by Total Score
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setSortField("leadership")}>
                   Sort by Leadership
                 </DropdownMenuItem>
@@ -149,6 +156,12 @@ const MembersList = ({ members }) => {
                 <TableHead>
                   <Button variant="ghost" onClick={() => handleSort("appreciationPoints")} className="-ml-4">
                     Appreciation Points
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" onClick={() => handleSort("totalScore")} className="-ml-4">
+                    Total Score
                     <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
                 </TableHead>
@@ -201,6 +214,14 @@ const MembersList = ({ members }) => {
                       </Badge>
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 mr-2">
+                        <Star className="h-3 w-3 mr-1 fill-blue-500 text-blue-500" /> 
+                        {member.totalScore.toLocaleString()}
+                      </Badge>
+                    </div>
+                  </TableCell>
                   <TableCell>{renderSkillLevel(member.leadership)}</TableCell>
                   <TableCell>{renderSkillLevel(member.communication)}</TableCell>
                   <TableCell>{renderSkillLevel(member.management)}</TableCell>
@@ -209,7 +230,7 @@ const MembersList = ({ members }) => {
               ))}
               {sortedMembers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     No members found.
                   </TableCell>
                 </TableRow>

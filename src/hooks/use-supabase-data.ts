@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -114,6 +115,7 @@ export function useDetailedMemberData() {
               communication: 0,
               management: 0,
               problemSolving: 0,
+              totalScore: 0, // Added total score default
               lastActive: new Date().toISOString(),
             };
           }
@@ -124,6 +126,7 @@ export function useDetailedMemberData() {
           let totalCommunication = 0;
           let totalManagement = 0;
           let totalProblemSolving = 0;
+          let totalScore = 0; // Added variable to calculate total score
           let evalCount = 0;
 
           evalData.forEach((evaluation) => {
@@ -132,6 +135,13 @@ export function useDetailedMemberData() {
             totalCommunication += evaluation.communication || 0;
             totalManagement += evaluation.management || 0;
             totalProblemSolving += evaluation.problem_solving || 0;
+            
+            // Calculate total score as sum of all evaluation metrics
+            totalScore += (evaluation.leadership || 0) + 
+                         (evaluation.communication || 0) + 
+                         (evaluation.management || 0) + 
+                         (evaluation.problem_solving || 0);
+            
             evalCount++;
           });
 
@@ -146,6 +156,7 @@ export function useDetailedMemberData() {
             problemSolving: evalCount
               ? Math.round(totalProblemSolving / evalCount)
               : 0,
+            totalScore, // Add the total score to the returned object
             lastActive: new Date().toISOString(), // Placeholder for now
           };
         })
@@ -185,64 +196,88 @@ export function useTeamMetrics() {
   return useQuery({
     queryKey: ["team-metrics"],
     queryFn: async () => {
-      // Fallback to the previous implementation if rpc fails
-      const { data: evalData, error: evalError } = await supabase.from(
-        "evaluations"
-      ).select(`
-            leadership,
-            communication,
-            management,
-            problem_solving
-          `);
+      try {
+        // First try to use the SQL function
+        const { data, error } = await supabase.rpc("get_team_metrics");
+        
+        if (error) throw error;
+        
+        // Transform the returned data into the expected format
+        return data.map((item: { category: string; percentage: number }) => ({
+          name: item.category,
+          score: item.percentage,
+          color: getColorForCategory(item.category),
+        }));
+      } catch (error) {
+        console.error("Error using RPC for team metrics:", error);
+        
+        // Fallback to the previous implementation
+        const { data: evalData, error: evalError } = await supabase.from(
+          "evaluations"
+        ).select(`
+          leadership,
+          communication,
+          management,
+          problem_solving
+        `);
 
-      if (evalError) {
-        console.error("Error in fallback query for team metrics:", evalError);
-        throw new Error(evalError.message);
+        if (evalError) {
+          console.error("Error in fallback query for team metrics:", evalError);
+          throw new Error(evalError.message);
+        }
+
+        // Calculate averages for each metric
+        let totalLeadership = 0;
+        let totalCommunication = 0;
+        let totalManagement = 0;
+        let totalProblemSolving = 0;
+        let count = evalData.length;
+
+        evalData.forEach((evaluation) => {
+          if (evaluation.leadership) totalLeadership += evaluation.leadership;
+          if (evaluation.communication) totalCommunication += evaluation.communication;
+          if (evaluation.management) totalManagement += evaluation.management;
+          if (evaluation.problem_solving) totalProblemSolving += evaluation.problem_solving;
+        });
+
+        // Convert metrics to percentages
+        const getAverage = (value: number) =>
+          count > 0 ? Math.round(value / count) : 0;
+
+        return [
+          {
+            name: "Leadership",
+            score: getAverage(totalLeadership),
+            color: "#3b82f6",
+          },
+          {
+            name: "Communication",
+            score: getAverage(totalCommunication),
+            color: "#8b5cf6",
+          },
+          {
+            name: "Management",
+            score: getAverage(totalManagement),
+            color: "#10b981",
+          },
+          {
+            name: "Problem Solving",
+            score: getAverage(totalProblemSolving),
+            color: "#f97316",
+          },
+        ];
       }
-
-      // Calculate averages for each metric
-      let totalLeadership = 0;
-      let totalCommunication = 0;
-      let totalManagement = 0;
-      let totalProblemSolving = 0;
-      let count = 0;
-
-      evalData.forEach((evaluation) => {
-        if (evaluation.leadership) totalLeadership += evaluation.leadership;
-        if (evaluation.communication)
-          totalCommunication += evaluation.communication;
-        if (evaluation.management) totalManagement += evaluation.management;
-        if (evaluation.problem_solving)
-          totalProblemSolving += evaluation.problem_solving;
-        count++;
-      });
-
-      // Convert metrics to percentages (assuming metrics are on a scale of 0-10)
-      const getAverage = (value: number) =>
-        value !== 0 ? Math.round(value / evalData.length) : 0;
-
-      return [
-        {
-          name: "Leadership",
-          score: getAverage(totalLeadership),
-          color: "#3b82f6",
-        },
-        {
-          name: "Communication",
-          score: getAverage(totalCommunication),
-          color: "#8b5cf6",
-        },
-        {
-          name: "Management",
-          score: getAverage(totalManagement),
-          color: "#10b981",
-        },
-        {
-          name: "Problem Solving",
-          score: getAverage(totalProblemSolving),
-          color: "#f97316",
-        },
-      ];
     },
   });
+}
+
+// Helper function to assign colors based on category
+function getColorForCategory(category: string): string {
+  switch (category) {
+    case 'Leadership': return '#3b82f6'; // blue
+    case 'Communication': return '#8b5cf6'; // purple
+    case 'Management': return '#10b981'; // green
+    case 'Problem Solving': return '#f97316'; // orange
+    default: return '#3b82f6';
+  }
 }
