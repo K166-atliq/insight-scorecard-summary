@@ -19,10 +19,15 @@ serve(async (req) => {
   }
 
   try {
-    // Parse the request to get query parameters
-    const url = new URL(req.url);
-    const quarter = url.searchParams.get("quarter") || null;
-    const year = url.searchParams.get("year") ? parseInt(url.searchParams.get("year") || "0") : null;
+    let filter_quarter = null;
+    let filter_year = null;
+    
+    // Parse request body for parameters
+    const requestData = await req.json().catch(() => ({}));
+    if (requestData) {
+      filter_quarter = requestData.filter_quarter || null;
+      filter_year = requestData.filter_year || null;
+    }
 
     // Create a Supabase client with the Auth context of the logged in user
     const supabaseClient = createClient(
@@ -37,11 +42,47 @@ serve(async (req) => {
       }
     );
 
-    // Execute the SQL query with optional quarter and year filters
-    const { data, error } = await supabaseClient.rpc('get_team_metrics', {
-      filter_quarter: quarter !== "All" ? quarter : null,
-      filter_year: year > 0 ? year : null
-    });
+    // Construct the SQL query to get metrics data with optional filters
+    let query = `
+      SELECT
+          'Leadership' AS category,
+          ROUND(AVG(leadership), 2) AS percentage
+      FROM evaluations
+      ${filter_quarter || filter_year ? 'WHERE message_id IN (SELECT message_id FROM appreciations WHERE 1=1' : ''}
+      ${filter_quarter ? ` AND quarter = '${filter_quarter}'` : ''}
+      ${filter_year ? ` AND year = ${filter_year}` : ''}
+      ${filter_quarter || filter_year ? ')' : ''}
+      UNION ALL
+      SELECT
+          'Communication' AS category,
+          ROUND(AVG(communication), 2) AS percentage
+      FROM evaluations
+      ${filter_quarter || filter_year ? 'WHERE message_id IN (SELECT message_id FROM appreciations WHERE 1=1' : ''}
+      ${filter_quarter ? ` AND quarter = '${filter_quarter}'` : ''}
+      ${filter_year ? ` AND year = ${filter_year}` : ''}
+      ${filter_quarter || filter_year ? ')' : ''}
+      UNION ALL
+      SELECT
+          'Management' AS category,
+          ROUND(AVG(management), 2) AS percentage
+      FROM evaluations
+      ${filter_quarter || filter_year ? 'WHERE message_id IN (SELECT message_id FROM appreciations WHERE 1=1' : ''}
+      ${filter_quarter ? ` AND quarter = '${filter_quarter}'` : ''}
+      ${filter_year ? ` AND year = ${filter_year}` : ''}
+      ${filter_quarter || filter_year ? ')' : ''}
+      UNION ALL
+      SELECT
+          'Problem Solving' AS category,
+          ROUND(AVG(problem_solving), 2) AS percentage
+      FROM evaluations
+      ${filter_quarter || filter_year ? 'WHERE message_id IN (SELECT message_id FROM appreciations WHERE 1=1' : ''}
+      ${filter_quarter ? ` AND quarter = '${filter_quarter}'` : ''}
+      ${filter_year ? ` AND year = ${filter_year}` : ''}
+      ${filter_quarter || filter_year ? ')' : ''}
+    `;
+
+    // Execute the SQL query
+    const { data, error } = await supabaseClient.rpc('execute_sql', { sql: query });
 
     if (error) {
       throw error;

@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -41,7 +42,7 @@ export function useTeamLeaderboard(quarter: string | null = null, year: number |
   return useQuery({
     queryKey: ["team-leaderboard", quarter, year],
     queryFn: async () => {
-      // Use the RPC function with filters
+      // Create params object for the RPC call
       const params: Record<string, any> = {};
       
       if (quarter && quarter !== "All") {
@@ -52,6 +53,7 @@ export function useTeamLeaderboard(quarter: string | null = null, year: number |
         params.filter_year = year;
       }
       
+      // Use the RPC function with params
       const { data, error } = await supabase.rpc("get_leaderboard", params);
 
       if (error) {
@@ -206,20 +208,22 @@ export function useTeamMetrics(quarter: string | null = null, year: number | nul
     queryKey: ["team-metrics", quarter, year],
     queryFn: async () => {
       try {
-        // First try to use the edge function with filters
-        const url = new URL(`${supabase.functions.url}/get_team_metrics`);
+        // Build the function URL and parameters
+        const functionName = "get_team_metrics";
+        let functionParams: Record<string, any> = {};
         
         // Add query parameters if they exist
         if (quarter && quarter !== "All") {
-          url.searchParams.append("quarter", quarter);
+          functionParams.filter_quarter = quarter;
         }
         
         if (year && year > 0) {
-          url.searchParams.append("year", year.toString());
+          functionParams.filter_year = year;
         }
         
-        const { data: metricsData, error } = await supabase.functions.invoke("get_team_metrics", {
-          query: url.searchParams
+        // Invoke the function with parameters
+        const { data: metricsData, error } = await supabase.functions.invoke(functionName, {
+          body: functionParams
         });
         
         if (error) throw error;
@@ -233,39 +237,68 @@ export function useTeamMetrics(quarter: string | null = null, year: number | nul
       } catch (error) {
         console.error("Error using function for team metrics:", error);
         
-        // Fallback to the previous implementation with filters
-        let query = supabase.from("evaluations").select(`
-          leadership,
-          communication,
-          management,
-          problem_solving
-        `);
-        
+        // Fallback to direct database query when edge function fails
+        const { data: evalData, error: evalError } = await supabase
+          .from("evaluations")
+          .select(`
+            leadership,
+            communication,
+            management,
+            problem_solving
+          `);
+
         // Apply filters if they exist
-        if (quarter && quarter !== "All") {
-          // Join with appreciations to get quarter/year data
-          query = query.innerJoin(
-            "appreciations", 
-            "evaluations.message_id", 
-            "appreciations.message_id"
-          ).eq("appreciations.quarter", quarter);
-        }
+        let filteredData = evalData;
         
-        if (year && year > 0) {
-          // Only add this filter if not already joined
-          if (!(quarter && quarter !== "All")) {
-            query = query.innerJoin(
-              "appreciations", 
-              "evaluations.message_id", 
-              "appreciations.message_id"
-            );
+        if ((quarter && quarter !== "All") || (year && year > 0)) {
+          // Get IDs for messages that match our filters
+          let messageQuery = supabase
+            .from("appreciations")
+            .select("message_id");
+            
+          if (quarter && quarter !== "All") {
+            messageQuery = messageQuery.eq("quarter", quarter);
           }
-          query = query.eq("appreciations.year", year);
+            
+          if (year && year > 0) {
+            messageQuery = messageQuery.eq("year", year);
+          }
+            
+          const { data: messages, error: messagesError } = await messageQuery;
+          
+          if (messagesError) {
+            console.error("Error fetching filtered messages:", messagesError);
+            throw new Error(messagesError.message);
+          }
+          
+          // Extract message IDs
+          const messageIds = messages.map(msg => msg.message_id);
+          
+          // Filter evaluation data to only include these message IDs
+          if (messageIds.length > 0) {
+            const { data: filteredEvals, error: filteredError } = await supabase
+              .from("evaluations")
+              .select(`
+                leadership,
+                communication,
+                management,
+                problem_solving
+              `)
+              .in("message_id", messageIds);
+              
+            if (filteredError) {
+              console.error("Error fetching filtered evaluations:", filteredError);
+              throw new Error(filteredError.message);
+            }
+            
+            filteredData = filteredEvals;
+          } else {
+            // No messages match the filters, return empty dataset
+            filteredData = [];
+          }
         }
 
-        const { data: evalData, error: evalError } = await query;
-
-        if (evalError) {
+        if (evalError && !filteredData) {
           console.error("Error in fallback query for team metrics:", evalError);
           throw new Error(evalError.message);
         }
@@ -275,9 +308,9 @@ export function useTeamMetrics(quarter: string | null = null, year: number | nul
         let totalCommunication = 0;
         let totalManagement = 0;
         let totalProblemSolving = 0;
-        let count = evalData.length;
+        let count = filteredData ? filteredData.length : 0;
 
-        evalData.forEach((evaluation) => {
+        filteredData?.forEach((evaluation) => {
           if (evaluation.leadership) totalLeadership += evaluation.leadership;
           if (evaluation.communication) totalCommunication += evaluation.communication;
           if (evaluation.management) totalManagement += evaluation.management;
