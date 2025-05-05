@@ -25,10 +25,11 @@ export function useTeamMembersCount() {
 
 /**
  * Hook to fetch all team members with detailed evaluation data
+ * Now with optional quarter and year filtering
  */
-export function useDetailedMemberData() {
+export function useDetailedMemberData(quarter: string | null = null, year: number | null = null) {
   return useQuery({
-    queryKey: ["detailed-members"],
+    queryKey: ["detailed-members", quarter, year],
     queryFn: async () => {
       // First, get all team members
       const { data: members, error: membersError } = await supabase
@@ -40,11 +41,35 @@ export function useDetailedMemberData() {
         throw new Error(membersError.message);
       }
 
+      // Get the message IDs that match our quarter and year filters if provided
+      let filteredMessageIds: string[] = [];
+      if ((quarter && quarter !== "All") || (year && year > 0)) {
+        // Filter appreciations by quarter and year
+        let appreciationsQuery = supabase.from("appreciations").select("message_id");
+        
+        if (quarter && quarter !== "All") {
+          appreciationsQuery = appreciationsQuery.eq("quarter", quarter);
+        }
+        
+        if (year && year > 0) {
+          appreciationsQuery = appreciationsQuery.eq("year", year);
+        }
+        
+        const { data: appreciations, error: appreciationsError } = await appreciationsQuery;
+        
+        if (appreciationsError) {
+          console.error("Error fetching filtered appreciations:", appreciationsError);
+          throw new Error(appreciationsError.message);
+        }
+        
+        filteredMessageIds = appreciations.map(a => a.message_id);
+      }
+
       // For each member, get their evaluation metrics
       const membersWithDetails = await Promise.all(
         members.map(async (member) => {
-          // Get aggregated evaluation data for this user
-          const { data: evalData, error: evalError } = await supabase
+          // Base query for evaluations for this user
+          let evalQuery = supabase
             .from("evaluations")
             .select(
               `
@@ -57,6 +82,27 @@ export function useDetailedMemberData() {
             `
             )
             .eq("user_id", member.user_id);
+          
+          // Apply message_id filter if we have filters active
+          if ((quarter && quarter !== "All") || (year && year > 0)) {
+            if (filteredMessageIds.length > 0) {
+              evalQuery = evalQuery.in("message_id", filteredMessageIds);
+            } else {
+              // No messages match our filters, return member with zero metrics
+              return {
+                ...member,
+                appreciationPoints: 0,
+                leadership: 0,
+                communication: 0,
+                management: 0,
+                problemSolving: 0,
+                totalScore: 0,
+                lastActive: new Date().toISOString(),
+              };
+            }
+          }
+
+          const { data: evalData, error: evalError } = await evalQuery;
 
           if (evalError) {
             console.error(

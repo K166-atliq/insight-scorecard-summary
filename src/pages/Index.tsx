@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import SummaryCards from '@/components/dashboard/SummaryCards';
@@ -24,12 +25,22 @@ const Index = () => {
 
   // Fetch data from Supabase with filters
   const { data: teamMembersCount, isLoading: isLoadingMembers } = useTeamMembersCount();
-  const { data: appreciationsCount, isLoading: isLoadingAppreciations } = useAppreciationsCount();
+  const { data: appreciationsCount, isLoading: isLoadingAppreciations } = useAppreciationsCount(
+    selectedQuarter !== "All" ? selectedQuarter : null,
+    selectedYear > 0 ? selectedYear : null
+  );
+  
+  // Apply filters to all data fetching hooks
   const { data: leaderboardData, isLoading: isLoadingLeaderboard } = useTeamLeaderboard(
     selectedQuarter !== "All" ? selectedQuarter : null,
     selectedYear > 0 ? selectedYear : null
   );
-  const { data: membersData, isLoading: isLoadingMembersData } = useDetailedMemberData();
+  
+  const { data: membersData, isLoading: isLoadingMembersData } = useDetailedMemberData(
+    selectedQuarter !== "All" ? selectedQuarter : null, 
+    selectedYear > 0 ? selectedYear : null
+  );
+  
   const { data: teamMetrics, isLoading: isLoadingTeamMetrics } = useTeamMetrics(
     selectedQuarter !== "All" ? selectedQuarter : null, 
     selectedYear > 0 ? selectedYear : null
@@ -59,7 +70,9 @@ const Index = () => {
       value: isLoadingAppreciations ? "Loading..." : appreciationsCount,
       icon: "award",
       trend: null,
-      description: "Total appreciation posts in the system",
+      description: selectedQuarter !== "All" || selectedYear > 0 
+        ? `Appreciation posts for ${selectedQuarter !== "All" ? selectedQuarter : "all quarters"}${selectedYear > 0 ? ` ${selectedYear}` : ""}`
+        : "Total appreciation posts in the system",
       color: "purple" as const
     }
   ];

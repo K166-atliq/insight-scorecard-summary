@@ -98,11 +98,11 @@ serve(async (req) => {
     let totalProblemSolving = 0;
     let count = evaluations.length;
     
-    evaluations.forEach((eval) => {
-      totalLeadership += eval.leadership || 0;
-      totalCommunication += eval.communication || 0;
-      totalManagement += eval.management || 0;
-      totalProblemSolving += eval.problem_solving || 0;
+    evaluations.forEach((eval_item) => {
+      totalLeadership += eval_item.leadership || 0;
+      totalCommunication += eval_item.communication || 0;
+      totalManagement += eval_item.management || 0;
+      totalProblemSolving += eval_item.problem_solving || 0;
     });
     
     // Calculate averages as percentages (scale of 0-100)

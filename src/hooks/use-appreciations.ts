@@ -3,15 +3,24 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Hook to get the total count of appreciation posts
+ * Hook to get the total count of appreciation posts with optional filtering
  */
-export function useAppreciationsCount() {
+export function useAppreciationsCount(quarter: string | null = null, year: number | null = null) {
   return useQuery({
-    queryKey: ["appreciations-count"],
+    queryKey: ["appreciations-count", quarter, year],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("appreciations")
-        .select("*", { count: "exact", head: true });
+      let query = supabase.from("appreciations").select("*", { count: "exact", head: true });
+
+      // Apply filters if provided
+      if (quarter && quarter !== "All") {
+        query = query.eq("quarter", quarter);
+      }
+
+      if (year && year > 0) {
+        query = query.eq("year", year);
+      }
+
+      const { count, error } = await query;
 
       if (error) {
         console.error("Error fetching appreciations count:", error);
@@ -24,13 +33,13 @@ export function useAppreciationsCount() {
 }
 
 /**
- * Hook to fetch all kudos/appreciations with details
+ * Hook to fetch all kudos/appreciations with details and optional filters
  */
-export function useKudos() {
+export function useKudos(quarter: string | null = null, year: number | null = null) {
   return useQuery({
-    queryKey: ["kudos"],
+    queryKey: ["kudos", quarter, year],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("appreciations")
         .select(
           `
@@ -38,8 +47,21 @@ export function useKudos() {
           posted_by:posted_by_user_id(user_id, display_name),
           details:message_id(mentioned_user_id)
         `
-        )
-        .order("created_time", { ascending: false });
+        );
+
+      // Apply filters if provided
+      if (quarter && quarter !== "All") {
+        query = query.eq("quarter", quarter);
+      }
+
+      if (year && year > 0) {
+        query = query.eq("year", year);
+      }
+
+      // Apply ordering
+      query = query.order("created_time", { ascending: false });
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching kudos:", error);
