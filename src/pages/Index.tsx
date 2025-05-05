@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import SummaryCards from '@/components/dashboard/SummaryCards';
@@ -13,7 +12,7 @@ import {
   useDetailedMemberData,
   useTeamMetrics,
   useAvailableYears
-} from '@/hooks/use-supabase-data';
+} from '@/hooks';
 
 const Index = () => {
   // State for filters
